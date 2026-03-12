@@ -15,7 +15,7 @@ public extension Image {
 
 @available(iOS 13.0, macOS 10.15, *)
 #Preview {
-    Image(fluent: .accessTime24Regular)
+    Image(fluent: .accessibility24Regular)
         .resizable()
         .frame(width: 400, height: 400)
 }
