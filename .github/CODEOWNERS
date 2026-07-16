@@ -34,8 +34,8 @@ ios/ @nickromano
 package-lock.json @microsoft/cxe-prg
 package.json @microsoft/cxe-prg
 nx.json @microsoft/cxe-prg
+nano-staged.js @microsoft/cxe-prg
 monosize.config.mjs @microsoft/cxe-prg
-monosize.baseline.json @microsoft/cxe-prg
 .prettierignore @microsoft/cxe-prg
 .prettierrc @microsoft/cxe-prg
 
