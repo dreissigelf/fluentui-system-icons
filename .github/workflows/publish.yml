@@ -9,7 +9,7 @@ on:
         default: false
         type: boolean
 
-# Serialize all automated writers to `main` (this workflow and bundle-size.baseline.yml
+# Serialize all automated writers to `main` (this workflow and publish-standalone.yml
 # share the same group) so their pushes can never race and clobber each other.
 # `cancel-in-progress: false` queues runs instead of cancelling them.
 concurrency:
@@ -40,7 +40,7 @@ jobs:
           app-id: ${{ secrets.GH_FLUENT_CI_APP_ID }}
           private-key: ${{ secrets.GH_FLUENT_CI_PRIVATE_KEY }}
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           token: ${{ steps.generate-token.outputs.token }}
           #  Git knows file names/paths for history, but blobs (file contents) are fetched on demand.
@@ -229,6 +229,14 @@ jobs:
           distribution: temurin
           java-version: 11
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: wrapper
+          gradle-home-cache-excludes: |
+            caches
+            jdks
+
       # - name: Base64 decodes and pipes the GPG key content into the secret file
       #   env:
       #     GPG_KEY_CONTENT: ${{ secrets.GPG_KEY_CONTENT }}
@@ -238,16 +246,12 @@ jobs:
       #     sudo bash -c "echo '$GPG_KEY_CONTENT' | base64 -d > '$SIGNING_SECRET_KEY_RING_FILE'"
 
       - name: Build Android library
-        uses: eskatos/gradle-command-action@v1
-        with:
-          arguments: assembleRelease -DversionName='${{ env.NEW_VERSION }}'
-          build-root-directory: android
-          wrapper-directory: android
+        run: ./gradlew assembleRelease -DversionName='${{ env.NEW_VERSION }}'
+        working-directory: android
 
       # Temporarily commenting out the publishing to Maven Central, as it is blocking the release for other platforms
       # - name: Publish to Maven Central
       #   if: ${{ !inputs.dry-run }}
-      #   uses: eskatos/gradle-command-action@v1
       #   env:
       #     OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
       #     OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
@@ -256,10 +260,8 @@ jobs:
       #     SIGNING_SECRET_KEY_RING_FILE: ${{ secrets.SIGNING_SECRET_KEY_RING_FILE }}
       #     SONATYPE_STAGING_PROFILE_ID: ${{ secrets.SONATYPE_STAGING_PROFILE_ID }}
       #     VERSION_NAME: ${{ env.NEW_VERSION }}
-      #   with:
-      #     arguments: publishReleasePublicationToSonatypeRepository --max-workers 1 closeAndReleaseSonatypeStagingRepository
-      #     build-root-directory: android
-      #     wrapper-directory: android
+      #   run: ./gradlew publishReleasePublicationToSonatypeRepository --max-workers 1 closeAndReleaseSonatypeStagingRepository
+      #   working-directory: android
 
       - name: Generate BUILD.gn file for Android
         run: python3 generate_build_gn_android.py
@@ -277,14 +279,26 @@ jobs:
           git add -A
           git commit -m "chore(release): publish $NEW_VERSION [skip ci]"
 
-      - name: Tag release
-        if: ${{ !inputs.dry-run }}
-        run: git tag "$NEW_VERSION"
-
       - name: Push release
         if: ${{ !inputs.dry-run }}
         run: |
-          git push origin HEAD:main --follow-tags --tags
+          set -euo pipefail
+          # Re-sync ONLY here (never rebuild): replay the already-built release commit onto
+          # the latest main. main can advance during the long build via any writer — another
+          # automated job or a PR merge. Those changes are normally disjoint from a release
+          # commit, so this replays cleanly and keeps the just-published artifacts byte-for-
+          # byte. A genuine conflict aborts the job instead of silently mutating a published
+          # artifact.
+          git fetch origin main
+          git rebase origin/main
+          # Branch FIRST, tag SECOND: push the commit, then tag the SHA now guaranteed on
+          # main. This ordering makes an orphaned tag (tag without its commit on main)
+          # impossible, and fails closed if main moved in the interim — just re-run to retry.
+          # (Do NOT use --tags/--follow-tags: they push tags independently of the branch, so
+          # a rejected branch push can still leave a tag pointing at a commit not on main.)
+          git push origin HEAD:main
+          git tag "$NEW_VERSION"
+          git push origin "refs/tags/$NEW_VERSION"
 
       - name: Trigger CocoaPods publish
         if: ${{ !inputs.dry-run }}
@@ -345,7 +359,7 @@ jobs:
   #   needs: publish-library
 
   #   steps:
-  #   - uses: actions/checkout@v6
+  #   - uses: actions/checkout@v7
 
   #   - name: Bump version patch
   #     run: |
@@ -375,17 +389,22 @@ jobs:
   #       distribution: temurin
   #       java-version: 8
 
+  #   - name: Set up Gradle
+  #     uses: gradle/actions/setup-gradle@v5
+  #     with:
+  #       gradle-version: wrapper
+  #       gradle-home-cache-excludes: |
+  #         caches
+  #         jdks
+
   #   - name: Restore release keystore
   #     run: |
   #       echo "${{ secrets.ANDROID_KEYSTORE }}" > release.keystore.asc
   #       gpg -d --passphrase "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" --batch release.keystore.asc > release.keystore
 
   #   - name: Build Android demo app
-  #     uses: eskatos/gradle-command-action@v1
-  #     with:
-  #       arguments: ':sample-showcase:assembleRelease -DversionName=${{ env.NEW_VERSION }} -DversionCode=${{ github.run_number }} -Pandroid.injected.signing.store.file=/home/runner/work/fluentui-system-icons/fluentui-system-icons/release.keystore -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEYSTORE_ALIAS }} -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}'
-  #       build-root-directory: android
-  #       wrapper-directory: android
+  #     run: ./gradlew :sample-showcase:assembleRelease -DversionName=${{ env.NEW_VERSION }} -DversionCode=${{ github.run_number }} -Pandroid.injected.signing.store.file=/home/runner/work/fluentui-system-icons/fluentui-system-icons/release.keystore -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEYSTORE_ALIAS }} -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+  #     working-directory: android
 
   #   - name: Publish apk to App Center
   #     uses: wzieba/AppCenter-Github-Action@v1.0.0

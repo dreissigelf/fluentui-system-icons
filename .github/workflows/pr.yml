@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Check asset directories are valid for Windows
         run: |
@@ -33,7 +33,7 @@ jobs:
     name: Validate Asset Fills
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Check that all SVGs have the right fill
         run: |
@@ -52,7 +52,7 @@ jobs:
     name: Validate PR Title
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v6
         with:
@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v6
         with:
@@ -88,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v6
         with:
@@ -106,13 +106,17 @@ jobs:
           distribution: temurin
           java-version: 11
 
-      # https://github.com/marketplace/actions/gradle-command
-      - name: Build Android library
-        uses: eskatos/gradle-command-action@v1
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
         with:
-          arguments: assembleRelease
-          build-root-directory: android
-          wrapper-directory: android
+          gradle-version: wrapper
+          gradle-home-cache-excludes: |
+            caches
+            jdks
+
+      - name: Build Android library
+        run: ./gradlew assembleRelease
+        working-directory: android
 
       - name: Generate BUILD.gn file for Android
         run: python3 generate_build_gn_android.py
@@ -124,7 +128,7 @@ jobs:
   #   runs-on: ubuntu-latest
 
   #   steps:
-  #   - uses: actions/checkout@v6
+  #   - uses: actions/checkout@v7
 
   #   - uses: actions/setup-node@v4
   #     with:
@@ -157,7 +161,7 @@ jobs:
       actions: 'read'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           filter: tree:0
@@ -188,6 +192,10 @@ jobs:
         run: npx nx affected -t test
 
       - name: Bundle-Size
+        env:
+          # Required by monosize-storage-git to read the baseline report artifact
+          # from the target branch via the GitHub API.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npx nx affected -t bundle-size
           npx monosize compare-reports --branch=${{ github.event.pull_request.base.ref }} --output markdown --quiet > bundle-size-report.md
