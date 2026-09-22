@@ -109,6 +109,7 @@ import Foundation
   case star24Filled = 16522
   case star24Regular = 16523
   case subtract24Regular = 16764
+  case subtract24Regular = 16764
   case tablet24Regular = 17478
   case target24Regular = 17623
   case ticketDiagonal24Regular = 18775
@@ -222,6 +223,7 @@ import Foundation
     case .speaker224Filled: return "ic_fluent_speaker_2_24_filled"
     case .star24Filled: return "ic_fluent_star_24_filled"
     case .star24Regular: return "ic_fluent_star_24_regular"
+    case .subtract24Regular: return "ic_fluent_subtract_24_regular"
     case .subtract24Regular: return "ic_fluent_subtract_24_regular"
     case .tablet24Regular: return "ic_fluent_tablet_24_regular"
     case .target24Regular: return "ic_fluent_target_24_regular"
@@ -338,6 +340,7 @@ import Foundation
     case .speaker224Filled: return ".speaker224Filled"
     case .star24Filled: return ".star24Filled"
     case .star24Regular: return ".star24Regular"
+    case .subtract24Regular: return ".subtract24Regular"
     case .subtract24Regular: return ".subtract24Regular"
     case .tablet24Regular: return ".tablet24Regular"
     case .target24Regular: return ".target24Regular"
