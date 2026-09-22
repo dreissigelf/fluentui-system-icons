@@ -83,6 +83,7 @@ import Foundation
   case mail24Regular = 10971
   case mailInbox24Regular = 11125
   case moreHorizontal24Regular = 11713
+  case options24Regular = 12250
   case people24Filled = 12765
   case people24Regular = 12766
   case peopleCommunity24Filled = 12851
@@ -196,6 +197,7 @@ import Foundation
     case .mail24Regular: return "ic_fluent_mail_24_regular"
     case .mailInbox24Regular: return "ic_fluent_mail_inbox_24_regular"
     case .moreHorizontal24Regular: return "ic_fluent_more_horizontal_24_regular"
+    case .options24Regular: return "ic_fluent_options_24_regular"
     case .people24Filled: return "ic_fluent_people_24_filled"
     case .people24Regular: return "ic_fluent_people_24_regular"
     case .peopleCommunity24Filled: return "ic_fluent_people_community_24_filled"
@@ -311,6 +313,7 @@ import Foundation
     case .mail24Regular: return ".mail24Regular"
     case .mailInbox24Regular: return ".mailInbox24Regular"
     case .moreHorizontal24Regular: return ".moreHorizontal24Regular"
+    case .options24Regular: return ".options24Regular"
     case .people24Filled: return ".people24Filled"
     case .people24Regular: return ".people24Regular"
     case .peopleCommunity24Filled: return ".peopleCommunity24Filled"
